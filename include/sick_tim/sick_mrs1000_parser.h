@@ -32,28 +32,25 @@
  *
  */
 
-#ifndef SICK_TIM551_2050001_PARSER_H_
-#define SICK_TIM551_2050001_PARSER_H_
+#ifndef SICK_MRS1000_PARSER_H_
+#define SICK_MRS1000_PARSER_H_
 
 #include "abstract_parser.h"
 
 namespace sick_tim
 {
 
-class SickTim5512050001Parser : public AbstractParser
+class SickMRS1000Parser : public AbstractParser
 {
 public:
-  SickTim5512050001Parser();
-  virtual ~SickTim5512050001Parser();
+  SickMRS1000Parser();
+  virtual ~SickMRS1000Parser();
 
   virtual int parse_datagram(char* datagram, size_t datagram_length, SickTimConfig &config,
                              sensor_msgs::LaserScan &msg);
 
   virtual int parse_datagram(char* datagram, size_t datagram_length, SickTimConfig &config,
-                             sensor_msgs::PointCloud &msg)
-  {
-    throw 0;
-  }
+                             sensor_msgs::PointCloud &msg);
 
   void set_range_min(float min);
   void set_range_max(float max);
@@ -65,4 +62,4 @@ private:
 };
 
 } /* namespace sick_tim */
-#endif /* SICK_TIM551_2050001_PARSER_H_ */
+#endif /* SICK_MRS1000_PARSER_H_ */

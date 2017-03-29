@@ -47,6 +47,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud.h>
 #include <std_msgs/String.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
@@ -117,6 +118,9 @@ private:
   ros::Publisher pub_;
   ros::Publisher datagram_pub_;
   bool publish_datagram_;
+
+  // Should we publish laser or point cloud?
+  bool publish_point_cloud_;
 
   // Diagnostics
   diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>* diagnosticPub_;

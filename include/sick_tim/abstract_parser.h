@@ -37,6 +37,7 @@
 
 #include <sick_tim/SickTimConfig.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud.h>
 
 namespace sick_tim
 {
@@ -56,6 +57,9 @@ public:
 
   virtual int parse_datagram(char* datagram, size_t datagram_length, SickTimConfig &config,
                              sensor_msgs::LaserScan &msg) = 0;
+
+  virtual int parse_datagram(char* datagram, size_t datagram_length, SickTimConfig &config,
+                             sensor_msgs::PointCloud &msg) = 0;
 };
 
 } /* namespace sick_tim */
