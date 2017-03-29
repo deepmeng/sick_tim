@@ -45,7 +45,7 @@ namespace sick_tim
 {
 
 SickTimCommon::SickTimCommon(AbstractParser* parser) :
-    publish_point_cloud_(false), diagnosticPub_(NULL), expectedFrequency_(15.0), parser_(parser)
+    diagnosticPub_(NULL), expectedFrequency_(15.0), parser_(parser)
     // FIXME All Tims have 15Hz?
 {
   dynamic_reconfigure::Server<sick_tim::SickTimConfig>::CallbackType f;
@@ -58,23 +58,18 @@ SickTimCommon::SickTimCommon(AbstractParser* parser) :
   if (publish_datagram_)
     datagram_pub_ = nh_.advertise<std_msgs::String>("datagram", 1000);
 
+  // cloud publisher
+  cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud>("cloud", 100);
+
   // scan publisher
-  pn.param<bool>("publish_point_cloud", publish_point_cloud_, false);
-  if (publish_point_cloud_)
-  {
-    pub_ = nh_.advertise<sensor_msgs::PointCloud>("scan", 100);
-  }
-  else
-  {
-    pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
-    diagnostics_.setHardwareID("none");   // set from device after connection
-    diagnosticPub_ = new diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>(pub_, diagnostics_,
-            // frequency should be target +- 10%.
-            diagnostic_updater::FrequencyStatusParam(&expectedFrequency_, &expectedFrequency_, 0.1, 10),
-            // timestamp delta can be from 0.0 to 1.3x what it ideally is.
-            diagnostic_updater::TimeStampStatusParam(-1, 1.3 * 1.0/expectedFrequency_ - config_.time_offset));
-    ROS_ASSERT(diagnosticPub_ != NULL);
-  }
+  pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
+  diagnostics_.setHardwareID("none");   // set from device after connection
+  diagnosticPub_ = new diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>(pub_, diagnostics_,
+          // frequency should be target +- 10%.
+          diagnostic_updater::FrequencyStatusParam(&expectedFrequency_, &expectedFrequency_, 0.1, 10),
+          // timestamp delta can be from 0.0 to 1.3x what it ideally is.
+          diagnostic_updater::TimeStampStatusParam(-1, 1.3 * 1.0/expectedFrequency_ - config_.time_offset));
+  ROS_ASSERT(diagnosticPub_ != NULL);
 }
 
 int SickTimCommon::stop_scanner()
@@ -337,7 +332,37 @@ int SickTimCommon::loopOnce()
     dstart++;
     int success = parser_->parse_datagram(dstart, dlength, config_, msg);
     if (success == ExitSuccess)
-      diagnosticPub_->publish(msg);
+    {
+      // Copy to pointcloud
+      cloud_.points.resize(msg.ranges.size() * 4);
+      cloud_.channels.resize(1);
+      cloud_.channels[0].name = "layer";
+      cloud_.channels[0].values.resize(msg.ranges.size() * 4);
+      int layer = 0;
+      if (msg.header.seq == 250) layer = -1;
+      else if (msg.header.seq == 0) layer = 0;
+      else if (msg.header.seq == -250) layer = 1;
+      else if (msg.header.seq == -500) layer = 2;
+      float angle = msg.angle_min;
+      for (size_t i = 0; i < msg.ranges.size(); i++)
+      {
+        geometry_msgs::Point32 point;
+        point.x = cos(angle) * msg.ranges[i];
+        point.y = sin(angle) * msg.ranges[i];
+        point.z = sin(layer * 0.0436332 /*2.5 degrees*/) * sqrt(point.x*point.x + point.y*point.y);
+        cloud_.points[(layer+1)*msg.ranges.size() + i] = point;
+        angle += msg.angle_increment;
+        cloud_.channels[0].values[(layer+1)*msg.ranges.size() + i] = layer;
+      }
+
+      // Publish
+      if (msg.header.seq == 0)
+      {
+        diagnosticPub_->publish(msg);
+        cloud_.header.frame_id = msg.header.frame_id;
+        cloud_pub_.publish(cloud_);
+      }
+    }
     buffer_pos = dend + 1;
   }
 

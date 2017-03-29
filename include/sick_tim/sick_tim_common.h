@@ -120,7 +120,8 @@ private:
   bool publish_datagram_;
 
   // Should we publish laser or point cloud?
-  bool publish_point_cloud_;
+  ros::Publisher cloud_pub_;
+  sensor_msgs::PointCloud cloud_;
 
   // Diagnostics
   diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>* diagnosticPub_;

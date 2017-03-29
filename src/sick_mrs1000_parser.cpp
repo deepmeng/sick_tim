@@ -93,10 +93,10 @@ int SickMRS1000Parser::parse_datagram(char* datagram, size_t datagram_length, Si
     // ROS_DEBUG("received message was: %s", datagram_copy);
     return ExitError;
   }
-  if (strcmp(fields[15], "0"))
+  if (false) //strcmp(fields[15], "0"))
   {
     // TODO: other layers are here on alternate values
-//    ROS_WARN("Field 15 of received data is not equal to 0 (%s). Unexpected data, ignoring scan", fields[15]);
+    ROS_WARN("Field 15 of received data is not equal to 0 (%s). Unexpected data, ignoring scan", fields[15]);
     return ExitError;
   }
   if (strcmp(fields[20], "DIST1"))
@@ -130,7 +130,6 @@ int SickMRS1000Parser::parse_datagram(char* datagram, size_t datagram_length, Si
   unsigned short int number_of_rssi_data = 0;
   if (rssi)
   {
-    std::cout << "RSSI" << std::endl;
     sscanf(fields[rssi_idx + 6], "%hx", &number_of_rssi_data);
 
     // Number of RSSI data should be equal to number of data
@@ -153,6 +152,10 @@ int SickMRS1000Parser::parse_datagram(char* datagram, size_t datagram_length, Si
       ROS_WARN("Field %zu of received data is not equal to RSSI1 (%s). Unexpected data, ignoring scan", rssi_idx + 1, fields[rssi_idx + 1]);
     }
   }
+
+  short layer = -1;
+  sscanf(fields[15], "%hx", &layer);
+  msg.header.seq = layer;
 
   // ----- read fields into msg
   msg.header.frame_id = config.frame_id;
